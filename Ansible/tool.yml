@@ -1,0 +1,81 @@
+- name: Install Git, Docker, Jenkins, NGINX on target server
+  hosts: target
+  become: yes
+
+  tasks:
+
+    - name: Update packages
+      yum:
+        name: "*"
+        state: latest
+
+    # -------------------
+    # Install Git
+    # -------------------
+    - name: Install Git
+      yum:
+        name: git
+        state: present
+
+    # -------------------
+    # Install Docker
+    # -------------------
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ec2-user to docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
+    # -------------------
+    # Install Jenkins
+    # -------------------
+    - name: Add Jenkins repo
+      get_url:
+        url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+        dest: /etc/yum.repos.d/jenkins.repo
+
+    - name: Import Jenkins key
+      rpm_key:
+        key: https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+        state: present
+
+    - name: Install Java (required for Jenkins)
+      yum:
+        name: java-17-amazon-corretto
+        state: present
+
+    - name: Install Jenkins
+      yum:
+        name: jenkins
+        state: present
+
+    - name: Start Jenkins
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    # -------------------
+    # Install NGINX
+    # -------------------
+    - name: Install NGINX
+      yum:
+        name: nginx
+        state: present
+
+    - name: Start NGINX
+      service:
+        name: nginx
+        state: started
+        enabled: yes
