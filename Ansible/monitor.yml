@@ -1,0 +1,155 @@
+[root@ip-172-31-36-114 ansible]# cat monitor.yml 
+- name: Install Prometheus, Grafana, Alertmanager
+  hosts: servers
+  become: yes
+
+  vars:
+    prometheus_version: 2.52.0
+    alertmanager_version: 0.27.0
+
+  tasks:
+
+    - name: Install required packages
+      yum:
+        name:
+          - wget
+          - tar
+        state: present
+
+    # -------------------
+    # Install Prometheus
+    # -------------------
+
+    - name: Download Prometheus
+      get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+        dest: /tmp/prometheus.tar.gz
+
+    - name: Create Prometheus directory
+      file:
+        path: /opt/prometheus
+        state: directory
+
+    - name: Extract Prometheus
+      unarchive:
+        src: /tmp/prometheus.tar.gz
+        dest: /opt/prometheus
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+
+    - name: Create Prometheus config
+      copy:
+        dest: /opt/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+
+          scrape_configs:
+            - job_name: "prometheus"
+              static_configs:
+                - targets: ["localhost:9090"]
+
+    - name: Create Prometheus service
+      copy:
+        dest: /etc/systemd/system/prometheus.service
+        content: |
+          [Unit]
+          Description=Prometheus
+          After=network.target
+
+          [Service]
+          ExecStart=/opt/prometheus/prometheus \
+            --config.file=/opt/prometheus/prometheus.yml
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start Prometheus
+      systemd:
+        daemon_reload: yes
+        name: prometheus
+        state: started
+        enabled: yes
+
+    # -------------------
+    # Install Grafana
+    # -------------------
+
+    - name: Add Grafana repo
+      copy:
+        dest: /etc/yum.repos.d/grafana.repo
+        content: |
+          [grafana]
+          name=Grafana OSS
+          baseurl=https://packages.grafana.com/oss/rpm
+          repo_gpgcheck=1
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://packages.grafana.com/gpg.key
+          sslverify=1
+
+    - name: Install Grafana
+      yum:
+        name: grafana
+        state: present
+
+    - name: Start Grafana
+      service:
+        name: grafana-server
+        state: started
+        enabled: yes
+
+    # -------------------
+    # Install Alertmanager
+    # -------------------
+
+    - name: Download Alertmanager
+      get_url:
+        url: "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz"
+        dest: /tmp/alertmanager.tar.gz
+
+    - name: Create Alertmanager directory
+      file:
+        path: /opt/alertmanager
+        state: directory
+
+    - name: Extract Alertmanager
+      unarchive:
+        src: /tmp/alertmanager.tar.gz
+        dest: /opt/alertmanager
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+
+    - name: Create Alertmanager config
+      copy:
+        dest: /opt/alertmanager/alertmanager.yml
+        content: |
+          route:
+            receiver: "default"
+
+          receivers:
+            - name: "default"
+
+    - name: Create Alertmanager service
+      copy:
+        dest: /etc/systemd/system/alertmanager.service
+        content: |
+          [Unit]
+          Description=Alertmanager
+          After=network.target
+
+          [Service]
+          ExecStart=/opt/alertmanager/alertmanager \
+            --config.file=/opt/alertmanager/alertmanager.yml
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start Alertmanager
+      systemd:
+        daemon_reload: yes
+        name: alertmanager
+        state: started
+        enabled: yes
