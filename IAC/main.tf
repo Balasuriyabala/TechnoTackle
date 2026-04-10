@@ -167,7 +167,7 @@ resource "local_file" "private_key" {
 
 resource "aws_instance" "manager" {
   ami                         = "ami-02289b3fe036fe5cd" 
-  instance_type               = "t3.micro"
+  instance_type               = "t3.small"
   subnet_id                   = aws_subnet.public_subnet_a.id
   vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
   associate_public_ip_address = true
@@ -180,7 +180,7 @@ resource "aws_instance" "manager" {
 
 resource "aws_instance" "worker" {
   ami                         = "ami-02289b3fe036fe5cd"
-  instance_type               = "t3.micro"
+  instance_type               = "t3.small"
   subnet_id                   = aws_subnet.public_subnet_a.id
   vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
   associate_public_ip_address = true
