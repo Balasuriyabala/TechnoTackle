@@ -3,4 +3,5 @@ Hi,
 
      Prometheus:  http://18.141.231.236:9090/
      Alert Manager:  http://18.141.231.236:9093
+     Grafana: http://18.141.231.236:3000 [u admin -p newpassword123]
     
