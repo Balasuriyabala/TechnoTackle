@@ -35,6 +35,6 @@ variable "username" {
 }
 
 variable "password" {
-    default = "postgres@123!" 
+    default = "admin12345" 
 }
   
