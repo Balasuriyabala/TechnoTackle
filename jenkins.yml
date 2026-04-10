@@ -1,0 +1,51 @@
+
+This is jenkins pipline code for frontend same as for backend also 
+pipeline {
+    agent any 
+    
+    tools {
+        nodejs 'node18'
+    }
+    environment {
+        IMAGE_NAME  = "frontend"
+        IMAGE_TAG   = "${BUILD_NUMBER}"
+    }  
+    
+    stages {
+        stage('GitCheckout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'github-app',
+                    url: 'https://github.com/Balasuriyabala/TechnoTackle.git'
+            }
+        }
+        
+        stage('Cleanup') {
+            steps {
+                sh '''
+                echo "Cleaning workspace..."
+                rm -rf Ansible IAC Nodejs_backend
+                '''
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                dir('/var/lib/jenkins/workspace/rontend') {
+                    sh "docker build --no-cache -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
+            }
+        }
+        
+        stage('Container Application') {
+            steps {
+                dir('/var/lib/jenkins/workspace/Frontend') {
+                  sh '''
+                  docker run -d --network host \
+                  --name ${IMAGE_NAME}-container \
+                  ${IMAGE_NAME}:${IMAGE_TAG}
+                  '''
+                }
+            }
+        }    
+    }
+}
